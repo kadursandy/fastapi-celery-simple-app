@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  rabbitmq:
+    image: rabbitmq
+
+  backend:
+    image: kadursandy/fastapi-celery-simple-app:latest
+    ports:
+    - 8081:8081
+    entrypoint: uvicorn main:app --host 0.0.0.0 --port 8081
+
+  redis:
+    hostname: app-redis
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  worker:
+    image: kadursandy/fastapi-celery-simple-app:latest
+    entrypoint: celery -A worker.celery_app worker --loglevel=info
+
+  flower:
+    image: kadursandy/fastapi-celery-simple-app:latest
+    ports:
+      - 5555:5555
+    depends_on:
+      - rabbitmq
+      - backend
+      - worker
+    entrypoint: celery flower -A worker.celery_app --broker=amqp://guest:guest@rabbitmq:5672//
